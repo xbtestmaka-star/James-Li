@@ -1,101 +1,100 @@
-# James AI
+# James AI — GitHub + Cloud Deployment
 
-A simple James AI web app with a Node.js/Express backend, OpenAI-powered chat and image generation, local chat history, file/image attachments, and the James AI logo.
+James AI is a Node.js/Express web app. **For AI to keep working when your laptop is OFF, deploy this repository to a cloud web service.** GitHub is the source-code repository; it is not the AI backend.
 
-## Project structure
+## Recommended setup (laptop can be OFF)
 
 ```text
-jamesai/
-├── public/
-│   ├── index.html
-│   ├── script.js
-│   ├── style.css
-│   └── jamesai-logo.jpg
-├── .env.example
-├── .gitignore
-├── .nvmrc
-├── package.json
-├── package-lock.json
-├── render.yaml
-└── server.js
+GitHub repository
+       │
+       ▼
+Cloud web service (Render)
+       │
+       ├── James AI website
+       └── /api/chat + /api/images
+                │
+                ▼
+           OpenAI API
+                │
+                ▼
+          📱 Phone / PC
 ```
 
-## Run locally
+This project is already structured so the same cloud service serves both the website and the API. That is the easiest setup: **do not use GitHub Pages for the main James AI site**.
+
+## 1. Upload to GitHub
+
+Upload the **contents of this folder** to your GitHub repository. Do not upload `.env` or a real API key.
+
+## 2. Deploy from GitHub to Render
+
+1. Create/sign in to a Render account.
+2. Choose **New → Web Service** and connect your GitHub repository.
+3. Runtime: **Node**.
+4. Build command: `npm ci`
+5. Start command: `npm start`
+6. Add environment variable `OPENAI_API_KEY` and paste your API key there.
+7. Keep `OPENAI_MODEL=gpt-6-luna` and `OPENAI_IMAGE_MODEL=gpt-image-2` unless you intentionally change them.
+8. Deploy.
+
+After deployment Render gives you a URL similar to:
+
+`https://james-ai-xxxx.onrender.com`
+
+Open that URL on your phone. **Your laptop does not need to be on.**
+
+## 3. Health check
+
+Open:
+
+`https://YOUR-RENDER-URL/api/health`
+
+You should see JSON containing `"ok": true` and `"apiConfigured": true`.
+
+If `apiConfigured` is false, the `OPENAI_API_KEY` environment variable has not been added correctly.
+
+## GitHub Pages (optional)
+
+GitHub Pages can host the static frontend, but it cannot run this Node.js/Express API. If you specifically want GitHub Pages, first deploy the backend above, then change this line in `public/index.html`:
+
+```html
+<script>window.JAMESAI_API_BASE_URL = "https://YOUR-RENDER-URL";</script>
+```
+
+Then redeploy the frontend to GitHub Pages. **Never put the OpenAI API key in this file or any `public/` file.**
+
+## Local development
 
 Requirements: Node.js 20+.
 
 ```bash
 npm install
 cp .env.example .env
-```
-
-Put your API key in `.env`:
-
-```env
-OPENAI_API_KEY=your_real_key_here
-```
-
-Then start development mode:
-
-```bash
+# put your real key in .env
 npm run dev
 ```
 
 Open `http://localhost:3000`.
 
-For normal production-style start:
+## Security
 
-```bash
-npm start
-```
+- `.env` is ignored by Git.
+- Keep `OPENAI_API_KEY` only in the cloud service's secret/environment settings.
+- Do not paste the API key into `public/`, GitHub Pages, screenshots, or chat messages.
 
-Health check: `http://localhost:3000/api/health`
+## Android
 
-## GitHub development workflow
+The included Capacitor workflow can build an Android APK after you have a permanent HTTPS James AI URL. Set the GitHub repository variable `JAMESAI_URL` to your deployed URL and run the **Build James AI Android APK** workflow.
 
-1. Create a new GitHub repository, for example `jamesai`.
-2. Upload/push the contents of this folder to that repository.
-3. Clone it on your computer:
 
-```bash
-git clone YOUR_REPOSITORY_URL
-cd jamesai
-npm install
-```
+## Google Login / Sign up
 
-4. Create `.env` from `.env.example` and add your API key.
-5. Develop with `npm run dev`.
-6. Commit and push changes:
+James AI now requires Google Login before the app can be used. Google Sign in and Google Sign up use the same Google Identity Services button.
 
-```bash
-git add .
-git commit -m "Update James AI"
-git push
-```
+1. Create a Google OAuth 2.0 **Web application** client in Google Cloud Console.
+2. Add the exact deployed James AI origin to **Authorized JavaScript origins** (for local use: `http://localhost:3000`).
+3. Put the client ID in `.env`:
+   `GOOGLE_CLIENT_ID=YOUR_GOOGLE_OAUTH_CLIENT_ID`
+4. Restart the server.
 
-### Important security rule
-
-Never commit `.env` or an OpenAI API key. `.gitignore` already excludes `.env` and `node_modules`.
-
-## Deploy
-
-GitHub stores the source code; the Node.js backend should run on a server/hosting platform. This project includes `render.yaml` for a Render deployment.
-
-Set `OPENAI_API_KEY` as a secret/environment variable on the hosting platform. Do not put it in `public/` files.
-
-## Features
-
-- James AI chat
-- Image understanding through attachments
-- PDF/TXT/CSV/Markdown/JSON and common Office-file attachments
-- AI image creation
-- Browser-side photo editing tools
-- Local browser chat history
-- James AI logo/favicon
-- Express API backend
-
-## Notes
-
-- Browser photo editing does not require an API call.
-- Chat attachments are sent to the backend and then to the AI API.
-- The API model names can be configured through environment variables.
+The server verifies the Google ID token before allowing `/api/chat` and `/api/images`.
